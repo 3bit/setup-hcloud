@@ -1,0 +1,82 @@
+name: ci
+on:
+  push:
+  pull_request:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      fail-fast: false
+      matrix:
+        operating-system: [ubuntu-latest, windows-latest, macOS-latest]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set Node.js 12
+      uses: actions/setup-node@v2.1.1
+      with:
+        node-version: 12.x
+
+    - run: npm ci
+
+    - run: npm run lint
+      if: runner.os != 'Windows'
+
+    - run: npm run build
+
+    - run: npm run format-check
+      if: runner.os != 'Windows'
+
+    - run: npm test
+
+    - name: Verify no unstaged changes
+      run: |
+        if [[ "$(git status --porcelain)" != "" ]]; then
+          echo '>>>>>>>>>>>>> git status' && git status
+          echo '>>>>>>>>>>>>> git diff' && git diff
+          echo "::error::Unstaged changes detected."
+          exit 1
+        fi
+
+  test:
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      fail-fast: false
+      matrix:
+        operating-system: [ubuntu-latest, windows-latest, macOS-latest]
+        hcloud-version: ['', 'latest', '1.19.0']
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Setup hcloud
+        uses: ./
+        with:
+          hcloud-version: ${{ matrix.hcloud-version }}
+
+      - name: Set expected version to latest release
+        if: ${{ matrix.hcloud-version }} == '' || ${{ matrix.hcloud-version == 'latest' }}
+        run: |
+          echo "::set-env name=expected_version::$(basename $(curl -Ls -o /dev/null -w %{url_effective} \
+                https://github.com/hetznercloud/cli/releases/latest) | { read v; echo ${v:1}; })"
+
+      - name: Set expected version to 1.19.0
+        if: ${{ matrix.hcloud-version == '1.19.0' }}
+        run: echo "::set-env name=expected_version::1.19.0"
+
+      - name: Check hcloud version matches
+        run: |
+          if [[ "$(hcloud version)" != "hcloud $expected_version" ]]; then
+            echo ">>>>>>>>>>>>> expected hcloud version: $expected_version"
+            echo ">>>>>>>>>>>>> actual hcloud version" && hcloud version
+            echo "::error::incorrect hcloud version"
+            exit 1
+          fi
