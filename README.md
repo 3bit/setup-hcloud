@@ -11,6 +11,8 @@ This action sets up the [Hetzner Cloud CLI](https://github.com/hetznercloud/cli)
 There is an optional parameter `hcloud-version` to setup a specific version of hcloud.
 The default value for `hcloud-version` is `latest`, which will resolve to the version https://github.com/hetznercloud/cli/releases/latest points to.
 
+The environment variable `HCLOUD_TOKEN` is required for hcloud to work properly. More info can be found [here](https://github.com/hetznercloud/cli/blob/master/README.md).
+
 Basic - setup the latest version:
 ```yaml
 steps:
