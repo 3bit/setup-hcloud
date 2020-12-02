@@ -135,7 +135,6 @@ describe('setup-hcloud', () => {
 
     expect(dlSpy).toHaveBeenCalled()
     expect(exSpy).toHaveBeenCalled()
-    expect(cnSpy).toHaveBeenCalledWith(`::add-path::${toolPath}${osm.EOL}`)
   })
 
   it('handles unhandled error and reports error', async () => {
